@@ -1,40 +1,40 @@
 ---
-# Install firewall package
-- name: Install firewall package
+# Install firewall packages based on OS family
+- name: Install firewall packages
   package:
-    name: "{{ firewall_packages[ansible_os_family] }}"
+    name: "{{ security_settings.firewall.packages[ansible_os_family] }}"
     state: present
+  become: true
 
-# Configure UFW for Debian-based systems
-- name: Configure UFW (Debian)
-  when: ansible_os_family == "Debian"
+# Configure firewall for RedHat systems
+- name: Configure firewall (RedHat)
   block:
-    - name: Allow ports through UFW
-      ufw:
-        rule: allow
-        port: "{{ item }}"
-        proto: tcp
-      with_items: "{{ firewall_allowed_ports }}"
-
-    - name: Enable UFW
-      ufw:
-        state: enabled
-        policy: deny
-
-# Configure Firewalld for RedHat-based systems
-- name: Configure Firewalld (RedHat)
-  when: ansible_os_family == "RedHat"
-  block:
-    - name: Start and enable firewalld
+    - name: Enable and start firewalld
+      when: ansible_os_family == "RedHat"
       service:
         name: firewalld
         state: started
         enabled: true
 
-    - name: Allow ports through firewalld
+    - name: Configure firewall ports
       firewalld:
-        port: "{{ item }}/tcp"
+        port: "{{ item.port }}/{{ item.proto }}"
         permanent: true
         state: enabled
-        immediate: true
-      with_items: "{{ firewall_allowed_ports }}" 
+      loop: "{{ security_settings.firewall.allowed_ports }}"
+      notify: Reload firewalld
+# Configure firewall for Debian systems
+- name: Configure firewall (Debian)
+  when: ansible_os_family == "Debian"
+  block:
+    - name: Enable UFW
+      ufw:
+        state: enabled
+        policy: deny
+
+    - name: Configure UFW ports
+      ufw:
+        rule: allow
+        port: "{{ item.port }}"
+        proto: "{{ item.proto }}"
+      loop: "{{ security_settings.firewall.allowed_ports }}"
