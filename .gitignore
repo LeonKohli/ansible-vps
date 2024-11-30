@@ -1,0 +1,35 @@
+# Ansible
+*.retry
+*.pyc
+__pycache__/
+.ansible/
+.vault_pass
+vault.key
+vault.txt
+inventory.local
+*.vault.yml
+*.vault.yaml
+
+# Temporary files
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Local configuration
+group_vars/local
+host_vars/local
+local.*
+
+# Sensitive data
+secrets/
+credentials/
+private/
+*.pem
+*.key
+*.crt
+
+# IDE and editor files
+.vscode/
+.idea/
+*.iml
