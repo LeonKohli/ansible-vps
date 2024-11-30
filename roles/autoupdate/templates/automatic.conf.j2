@@ -1,0 +1,25 @@
+[commands]
+upgrade_type = security
+random_sleep = 360
+download_updates = no
+apply_updates = no
+network_online_timeout = 60
+reboot = never
+
+[emitters]
+system_name = {{ inventory_hostname }}
+emit_via = stdio email motd
+send_error_messages = true
+notify_only = yes
+
+[base]
+debuglevel = 1
+
+[command]
+command_format = cat
+stdin_format = {body}
+
+[email]
+email_from = root@{{ inventory_hostname }}
+email_to = root
+email_host = localhost

@@ -1,0 +1,53 @@
+---
+# Configure automatic updates for RedHat systems
+- name: Configure dnf-automatic (RedHat)
+  when: ansible_os_family == "RedHat"
+  block:
+    - name: Install dnf-automatic
+      package:
+        name: dnf-automatic
+        state: present
+
+    - name: Configure dnf-automatic
+      template:
+        src: automatic.conf.j2
+        dest: /etc/dnf/automatic.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Enable and start dnf-automatic timer
+      systemd:
+        name: "dnf-automatic.timer"
+        state: started
+        enabled: true
+        daemon_reload: true
+
+# Configure automatic updates for Debian systems
+- name: Configure unattended-upgrades (Debian)
+  when: ansible_os_family == "Debian"
+  block:
+    - name: Install unattended-upgrades
+      package:
+        name: 
+          - unattended-upgrades
+          - apt-listchanges
+        state: present
+
+    - name: Configure unattended-upgrades
+      template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: root
+        group: root
+        mode: '0644'
+      loop:
+        - { src: 50unattended-upgrades.j2, dest: /etc/apt/apt.conf.d/50unattended-upgrades }
+        - { src: 20auto-upgrades.j2, dest: /etc/apt/apt.conf.d/20auto-upgrades }
+
+    - name: Enable unattended-upgrades service
+      systemd:
+        name: unattended-upgrades
+        state: started
+        enabled: true
+        daemon_reload: true

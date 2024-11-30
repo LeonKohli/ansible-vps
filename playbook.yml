@@ -5,6 +5,7 @@
 
   roles:
     - { role: update, tags: ['update', 'system'] }
+    - { role: autoupdate, tags: ['autoupdate', 'system'] }
     - { role: common, tags: ['common', 'packages'] }
     - { role: user, tags: ['user', 'security'] }
     - { role: security, tags: ['ssh', 'security'] }
@@ -41,3 +42,15 @@
           command: fail2ban-client get sshd bantime
           changed_when: false
           tags: ['verify', 'fail2ban']
+
+        - name: Verify automatic updates configuration (RedHat)
+          command: systemctl status dnf-automatic.timer
+          changed_when: false
+          when: ansible_os_family == 'RedHat'
+          tags: ['verify', 'autoupdate']
+
+        - name: Verify automatic updates configuration (Debian)
+          command: systemctl status unattended-upgrades
+          changed_when: false
+          when: ansible_os_family == 'Debian'
+          tags: ['verify', 'autoupdate']
