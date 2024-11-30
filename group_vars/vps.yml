@@ -1,0 +1,53 @@
+---
+# Common settings
+common_packages:
+  RedHat:
+    - sudo
+    - vim-minimal
+    - curl
+    - wget
+    - GeoIP
+    - GeoIP-GeoLite-data
+  Debian:
+    - sudo
+    - vim
+    - curl
+    - wget
+    - geoip-bin
+    - geoip-database
+
+# Security settings
+security_settings:
+  ssh_port: 22
+  ssh_config:
+    permit_root_login: "no"
+    password_authentication: "no"
+    x11_forwarding: "no"
+    max_auth_tries: 3
+    protocol: 2
+  fail2ban:
+    bantime: 3600
+    findtime: 600
+    maxretry: 3
+    logpath:
+      RedHat: /var/log/secure
+      Debian: /var/log/auth.log
+  firewall:
+    allowed_ports:
+      - 22  # SSH
+      - 80  # HTTP
+      - 443 # HTTPS
+  paths:
+    sftp_server:
+      RedHat: /usr/libexec/openssh/sftp-server
+      Debian: /usr/lib/openssh/sftp-server
+    ssh_service:
+      RedHat: sshd
+      Debian: ssh
+
+# Monitoring settings
+monitoring:
+  fail2ban:
+    check_interval: 300  # 5 minutes
+    alert_threshold: 5   # Alert if more than 5 failed attempts
+    log_file: /var/log/fail2ban-status.log

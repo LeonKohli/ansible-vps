@@ -1,0 +1,60 @@
+---
+# Install essential packages based on OS family
+- name: Install essential packages
+  package:
+    name: "{{ common_packages[ansible_os_family] }}"
+    state: present
+  become: true
+  tags: ['packages']
+
+# Install and configure monitoring
+- name: Install monitoring tools
+  become: true
+  tags: ['monitoring']
+  block:
+    - name: Copy fail2ban monitoring script
+      copy:
+        src: fail2ban-status.sh
+        dest: /usr/local/bin/fail2ban-status
+        mode: '0755'
+        owner: root
+        group: root
+      notify: Restart fail2ban
+
+    - name: Create symbolic link for fail2ban-status
+      file:
+        src: /usr/local/bin/fail2ban-status
+        dest: /usr/bin/f2b
+        state: link
+
+    - name: Create log directory
+      file:
+        path: "{{ monitoring.fail2ban.log_file | dirname }}"
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Set up monitoring cron job
+      cron:
+        name: "Check fail2ban status"
+        job: "/usr/bin/f2b > {{ monitoring.fail2ban.log_file }}"
+        minute: "*/{{ (monitoring.fail2ban.check_interval / 60) | int }}"
+        user: root
+
+    - name: Set up log rotation
+      copy:
+        dest: /etc/logrotate.d/fail2ban-status
+        mode: '0644'
+        owner: root 
+        group: root
+        content: |
+          {{ monitoring.fail2ban.log_file }} {
+            daily
+            rotate 7
+            compress
+            delaycompress
+            missingok
+            notifempty
+            create 0644 root root
+          }

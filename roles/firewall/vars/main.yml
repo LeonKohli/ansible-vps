@@ -1,0 +1,13 @@
+---
+# Firewall packages based on OS family
+firewall_packages:
+  Debian:
+    - ufw
+  RedHat:
+    - firewalld
+
+# Allowed ports
+firewall_allowed_ports:
+  - 22   # SSH
+  - 80   # HTTP
+  - 443  # HTTPS

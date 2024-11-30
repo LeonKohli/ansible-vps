@@ -1,0 +1,6 @@
+---
+# Restart SSH service
+- name: Restart SSH
+  service:
+    name: "{{ security_ssh_service }}"
+    state: restarted

@@ -1,0 +1,26 @@
+---
+# Apply SSH hardening configuration
+- name: Apply SSH hardening configuration
+  template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: '0600'
+    backup: true
+  notify: Restart SSH
+
+# Ensure sshd_config has proper permissions
+- name: Ensure sshd_config has proper permissions
+  file:
+    path: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: '0600'
+
+# Enable and start SSH service
+- name: Enable and start SSH service
+  service:
+    name: "{{ security_ssh_service }}"
+    state: started
+    enabled: true 

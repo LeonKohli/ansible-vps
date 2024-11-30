@@ -1,0 +1,8 @@
+skip_list:
+  - fqcn-builtins
+  - fqcn[action]
+  - fqcn[action-core]
+  - fqcn[canonical]
+  - name[casing]
+  - yaml[trailing-spaces]
+  - yaml[new-line-at-end-of-file]

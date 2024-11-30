@@ -1,0 +1,15 @@
+---
+# Replace with your desired username
+user_new_username: leon
+
+# Path to your local public SSH key
+user_ssh_public_key_path: ~/.ssh/id_ed25519.pub
+
+# Read the SSH public key from the file
+user_ssh_public_key: "{{ lookup('file', user_ssh_public_key_path) }}"
+
+# Determine the sudo group based on the OS family
+user_sudo_group: "{{ 'sudo' if ansible_os_family == 'Debian' else 'wheel' }}"
+
+# Sudo configuration
+user_sudo_requires_password: true  # Set to false only if absolutely necessary

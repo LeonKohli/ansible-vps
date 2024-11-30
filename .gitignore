@@ -9,7 +9,7 @@ vault.txt
 inventory.local
 *.vault.yml
 *.vault.yaml
-
+inventory.ini
 # Temporary files
 *.swp
 *.swo

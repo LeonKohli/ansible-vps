@@ -1,0 +1,40 @@
+---
+# Install firewall package
+- name: Install firewall package
+  package:
+    name: "{{ firewall_packages[ansible_os_family] }}"
+    state: present
+
+# Configure UFW for Debian-based systems
+- name: Configure UFW (Debian)
+  when: ansible_os_family == "Debian"
+  block:
+    - name: Allow ports through UFW
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      with_items: "{{ firewall_allowed_ports }}"
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+        policy: deny
+
+# Configure Firewalld for RedHat-based systems
+- name: Configure Firewalld (RedHat)
+  when: ansible_os_family == "RedHat"
+  block:
+    - name: Start and enable firewalld
+      service:
+        name: firewalld
+        state: started
+        enabled: true
+
+    - name: Allow ports through firewalld
+      firewalld:
+        port: "{{ item }}/tcp"
+        permanent: true
+        state: enabled
+        immediate: true
+      with_items: "{{ firewall_allowed_ports }}" 

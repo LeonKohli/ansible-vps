@@ -1,0 +1,63 @@
+---
+# Create a new user and add to sudoers
+- name: Create a new user
+  user:
+    name: "{{ user_new_username }}"
+    shell: /bin/bash
+    groups: "{{ user_sudo_group }}"
+    append: true
+  become: true
+
+# Create .ssh directory for the new user
+- name: Create .ssh directory for new user
+  file:
+    path: "/home/{{ user_new_username }}/.ssh"
+    state: directory
+    owner: "{{ user_new_username }}"
+    group: "{{ user_new_username }}"
+    mode: '0700'
+  become: true
+
+# Add your SSH public key to the new user's authorized_keys
+- name: Add authorized key for the new user
+  authorized_key:
+    user: "{{ user_new_username }}"
+    key: "{{ user_ssh_public_key }}"
+    state: present
+  become: true
+
+# Configure sudo access based on password requirement
+- name: Configure sudo access
+  become: true
+  block:
+    - name: Configure sudo access with password
+      lineinfile:
+        path: "/etc/sudoers.d/{{ user_new_username }}"
+        line: "{{ user_new_username }} ALL=(ALL) ALL"
+        create: true
+        mode: '0440'
+        validate: 'visudo -cf %s'
+      when: user_sudo_requires_password | bool
+
+    - name: Configure sudo access without password
+      lineinfile:
+        path: "/etc/sudoers.d/{{ user_new_username }}"
+        line: "{{ user_new_username }} ALL=(ALL) NOPASSWD:ALL"
+        create: true
+        mode: '0440'
+        validate: 'visudo -cf %s'
+      when: not user_sudo_requires_password | bool
+
+# Add security warning to user's login message
+- name: Add security message to user's .bashrc
+  blockinfile:
+    path: "/home/{{ user_new_username }}/.bashrc"
+    block: |
+      # Security reminder
+      echo "Remember: With great power comes great responsibility. Use sudo wisely."
+    marker: "# {mark} ANSIBLE MANAGED SECURITY REMINDER"
+    create: true
+    mode: '0644'
+    owner: "{{ user_new_username }}"
+    group: "{{ user_new_username }}"
+  become: true

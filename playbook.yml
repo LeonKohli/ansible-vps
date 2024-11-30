@@ -1,0 +1,43 @@
+---
+- name: Configure and Harden VPS
+  hosts: vps
+  become: true
+
+  roles:
+    - { role: update, tags: ['update', 'system'] }
+    - { role: common, tags: ['common', 'packages'] }
+    - { role: user, tags: ['user', 'security'] }
+    - { role: security, tags: ['ssh', 'security'] }
+    - { role: firewall, tags: ['firewall', 'security'] }
+    - { role: fail2ban, tags: ['fail2ban', 'security'] }
+
+  post_tasks:
+    - name: Verify security configuration
+      tags: ['verify']
+      block:
+        - name: Check SSH configuration
+          command: sshd -t
+          changed_when: false
+          tags: ['verify', 'ssh']
+
+        - name: Check firewall status on RedHat
+          command: firewall-cmd --state
+          when: ansible_os_family == 'RedHat'
+          changed_when: false
+          tags: ['verify', 'firewall']
+
+        - name: Check firewall status on Debian
+          command: ufw status
+          when: ansible_os_family == 'Debian'
+          changed_when: false
+          tags: ['verify', 'firewall']
+
+        - name: Check fail2ban status
+          command: fail2ban-client ping
+          changed_when: false
+          tags: ['verify', 'fail2ban']
+
+        - name: Verify fail2ban jail configuration
+          command: fail2ban-client get sshd bantime
+          changed_when: false
+          tags: ['verify', 'fail2ban']

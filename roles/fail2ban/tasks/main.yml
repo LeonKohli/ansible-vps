@@ -1,0 +1,23 @@
+---
+# Install Fail2Ban package
+- name: Install Fail2Ban
+  package:
+    name: fail2ban
+    state: present
+
+# Deploy Fail2Ban configuration
+- name: Configure Fail2Ban
+  template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Fail2Ban
+
+# Ensure Fail2Ban is running and enabled
+- name: Ensure Fail2Ban is running
+  service:
+    name: fail2ban
+    state: started
+    enabled: true
