@@ -1,53 +1,70 @@
 ---
-# Common settings
-common_packages:
-  RedHat:
-    - sudo
-    - vim-minimal
-    - curl
-    - wget
-    - GeoIP
-    - GeoIP-GeoLite-data
-  Debian:
-    - sudo
-    - vim
-    - curl
-    - wget
-    - geoip-bin
-    - geoip-database
+# User Settings
+user_settings:
+  username: "leon"
+  sudo_group: "wheel"
+  sudo_requires_password: true
+  ssh_public_key: "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}"
 
-# Security settings
+# Security Settings
 security_settings:
-  ssh_port: 22
-  ssh_config:
+  # SSH Settings
+  ssh:
+    port: 22
     permit_root_login: "no"
     password_authentication: "no"
     x11_forwarding: "no"
     max_auth_tries: 3
-    protocol: 2
-  fail2ban:
-    bantime: 3600
-    findtime: 600
-    maxretry: 3
-    logpath:
-      RedHat: /var/log/secure
-      Debian: /var/log/auth.log
+    pubkey_authentication: "yes"
+    authorized_keys_file: ".ssh/authorized_keys"
+
+  # Firewall Settings
   firewall:
     allowed_ports:
-      - 22  # SSH
-      - 80  # HTTP
-      - 443 # HTTPS
-  paths:
-    sftp_server:
-      RedHat: /usr/libexec/openssh/sftp-server
-      Debian: /usr/lib/openssh/sftp-server
-    ssh_service:
-      RedHat: sshd
-      Debian: ssh
+      - { port: 22, proto: "tcp" }  # SSH
+      - { port: 80, proto: "tcp" }  # HTTP
+      - { port: 443, proto: "tcp" } # HTTPS
+    packages:
+      RedHat:
+        - firewalld
+        - python3-firewall
+      Debian:
+        - ufw
 
-# Monitoring settings
-monitoring:
+  # Fail2ban Settings
   fail2ban:
-    check_interval: 300  # 5 minutes
-    alert_threshold: 5   # Alert if more than 5 failed attempts
-    log_file: /var/log/fail2ban-status.log
+    log_path: "/var/log/fail2ban.log"
+    monitoring_script_path: "/usr/local/bin/fail2ban-status"
+    bantime: "1h"
+    findtime: "1h"
+    maxretry: 3
+    jails:
+      sshd:
+        enabled: "true"
+        port: 22
+        filter: "sshd"
+        logpath: "/var/log/secure"
+        maxretry: 3
+
+# System Update Settings
+update_settings:
+  reboot_timeout: 300
+  connection_timeout: 5
+  post_reboot_delay: 30
+
+# Common Packages
+common_packages:
+  RedHat:
+    - vim
+    - htop
+    - tmux
+    - git
+    - fail2ban
+    - dnf-automatic
+  Debian:
+    - vim
+    - htop
+    - tmux
+    - git
+    - fail2ban
+    - unattended-upgrades

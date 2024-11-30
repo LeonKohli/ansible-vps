@@ -5,9 +5,10 @@ maxretry = {{ security_settings.fail2ban.maxretry }}
 ignoreip = 127.0.0.1/8 ::1
 
 [sshd]
-enabled = true
-port = {{ security_settings.ssh_port }}
-filter = sshd
-logpath = {{ security_settings.fail2ban.logpath[ansible_os_family] }}
-maxretry = {{ security_settings.fail2ban.maxretry }}
+enabled = {{ security_settings.fail2ban.jails.sshd.enabled }}
+port = {{ security_settings.ssh.port }}
+filter = {{ security_settings.fail2ban.jails.sshd.filter }}
+logpath = {{ security_settings.fail2ban.jails.sshd.logpath }}
+maxretry = {{ security_settings.fail2ban.jails.sshd.maxretry }}
 bantime = {{ security_settings.fail2ban.bantime }}
+findtime = {{ security_settings.fail2ban.findtime }}

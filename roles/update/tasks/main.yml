@@ -38,10 +38,10 @@
 - name: Reboot system if required
   reboot:
     msg: "Rebooting system due to package updates"
-    connect_timeout: 5
-    reboot_timeout: 300
+    connect_timeout: "{{ update_settings.connection_timeout }}"
+    reboot_timeout: "{{ update_settings.reboot_timeout }}"
     pre_reboot_delay: 0
-    post_reboot_delay: 30
+    post_reboot_delay: "{{ update_settings.post_reboot_delay }}"
     test_command: uptime
   when: reboot_required.stat.exists
   become: true

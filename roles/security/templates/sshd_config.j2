@@ -1,14 +1,15 @@
 # {{ ansible_managed }}
 
 # SSH Port
-Port {{ security_settings.ssh_port }}
+Port {{ security_settings.ssh.port }}
 
 # Authentication settings
-PermitRootLogin {{ security_settings.ssh_config.permit_root_login }}
-PasswordAuthentication {{ security_settings.ssh_config.password_authentication }}
-X11Forwarding {{ security_settings.ssh_config.x11_forwarding }}
-MaxAuthTries {{ security_settings.ssh_config.max_auth_tries }}
-Protocol {{ security_settings.ssh_config.protocol }}
+PermitRootLogin {{ security_settings.ssh.permit_root_login }}
+PasswordAuthentication {{ security_settings.ssh.password_authentication }}
+X11Forwarding {{ security_settings.ssh.x11_forwarding }}
+MaxAuthTries {{ security_settings.ssh.max_auth_tries }}
+PubkeyAuthentication {{ security_settings.ssh.pubkey_authentication }}
+AuthorizedKeysFile {{ security_settings.ssh.authorized_keys_file }}
 
 # Security
 UsePAM yes
@@ -18,4 +19,8 @@ PrintMotd no
 AcceptEnv LANG LC_*
 
 # SFTP configuration
-Subsystem sftp {{ security_settings.paths.sftp_server[ansible_os_family] }}
+Subsystem sftp internal-sftp
+
+# Logging
+SyslogFacility AUTH
+LogLevel INFO
