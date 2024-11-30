@@ -25,11 +25,8 @@ security_settings:
       - { port: 80, proto: "tcp" }  # HTTP
       - { port: 443, proto: "tcp" } # HTTPS
     packages:
-      RedHat:
-        - firewalld
-        - python3-firewall
-      Debian:
-        - ufw
+      - firewalld
+      - python3-firewall
 
   # Fail2ban Settings
   fail2ban:
@@ -54,17 +51,9 @@ update_settings:
 
 # Common Packages
 common_packages:
-  RedHat:
-    - vim
-    - htop
-    - tmux
-    - git
-    - fail2ban
-    - dnf-automatic
-  Debian:
-    - vim
-    - htop
-    - tmux
-    - git
-    - fail2ban
-    - unattended-upgrades
+  - vim
+  - htop
+  - tmux
+  - git
+  - fail2ban
+  - dnf-automatic

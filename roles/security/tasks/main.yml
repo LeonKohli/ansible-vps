@@ -21,6 +21,6 @@
 # Enable and start SSH service
 - name: Enable and start SSH service
   service:
-    name: "{{ 'sshd' if ansible_os_family == 'RedHat' else 'ssh' }}"
+    name: sshd
     state: started
     enabled: true

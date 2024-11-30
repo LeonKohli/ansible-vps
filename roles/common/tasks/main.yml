@@ -1,8 +1,8 @@
 ---
-# Install essential packages based on OS family
+# Install essential packages
 - name: Install essential packages
   package:
-    name: "{{ common_packages[ansible_os_family] }}"
+    name: "{{ common_packages }}"
     state: present
   become: true
   tags: ['packages']

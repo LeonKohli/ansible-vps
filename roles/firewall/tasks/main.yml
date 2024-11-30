@@ -1,40 +1,21 @@
 ---
-# Install firewall packages based on OS family
+# Install and configure firewalld
 - name: Install firewall packages
   package:
-    name: "{{ security_settings.firewall.packages[ansible_os_family] }}"
+    name: "{{ security_settings.firewall.packages }}"
     state: present
   become: true
 
-# Configure firewall for RedHat systems
-- name: Configure firewall (RedHat)
-  block:
-    - name: Enable and start firewalld
-      when: ansible_os_family == "RedHat"
-      service:
-        name: firewalld
-        state: started
-        enabled: true
+- name: Enable and start firewalld
+  service:
+    name: firewalld
+    state: started
+    enabled: true
 
-    - name: Configure firewall ports
-      firewalld:
-        port: "{{ item.port }}/{{ item.proto }}"
-        permanent: true
-        state: enabled
-      loop: "{{ security_settings.firewall.allowed_ports }}"
-      notify: Reload firewalld
-# Configure firewall for Debian systems
-- name: Configure firewall (Debian)
-  when: ansible_os_family == "Debian"
-  block:
-    - name: Enable UFW
-      ufw:
-        state: enabled
-        policy: deny
-
-    - name: Configure UFW ports
-      ufw:
-        rule: allow
-        port: "{{ item.port }}"
-        proto: "{{ item.proto }}"
-      loop: "{{ security_settings.firewall.allowed_ports }}"
+- name: Configure firewall ports
+  firewalld:
+    port: "{{ item.port }}/{{ item.proto }}"
+    permanent: true
+    state: enabled
+  loop: "{{ security_settings.firewall.allowed_ports }}"
+  notify: Reload firewalld

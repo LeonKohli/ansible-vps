@@ -1,38 +1,22 @@
 ---
 # Update package cache and upgrade all packages
-- name: Update package cache (Debian/Ubuntu)
-  apt:
-    update_cache: true
-    cache_valid_time: 3600
-  when: ansible_os_family == "Debian"
-  become: true
-
-- name: Upgrade all packages (Debian/Ubuntu)
-  apt:
-    upgrade: dist
-    autoremove: true
-    autoclean: true
-  when: ansible_os_family == "Debian"
-  become: true
-
-- name: Update package cache (RedHat/CentOS)
+- name: Update package cache
   dnf5:
     update_cache: true
-  when: ansible_os_family == "RedHat"
   become: true
 
-- name: Upgrade all packages (RedHat/CentOS)
+- name: Upgrade all packages
   dnf5:
     name: "*"
     state: latest
-  when: ansible_os_family == "RedHat"
   become: true
 
 # Reboot handling
 - name: Check if reboot is required
-  stat:
-    path: /var/run/reboot-required
+  command: needs-restarting -r
   register: reboot_required
+  changed_when: false
+  failed_when: false
   become: true
 
 - name: Reboot system if required
@@ -43,5 +27,5 @@
     pre_reboot_delay: 0
     post_reboot_delay: "{{ update_settings.post_reboot_delay }}"
     test_command: uptime
-  when: reboot_required.stat.exists
+  when: reboot_required.rc == 1
   become: true

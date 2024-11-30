@@ -2,5 +2,5 @@
 # Restart SSH service
 - name: Restart SSH
   service:
-    name: "{{ 'sshd' if ansible_os_family == 'RedHat' else 'ssh' }}"
+    name: sshd
     state: restarted
