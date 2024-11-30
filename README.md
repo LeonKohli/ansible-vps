@@ -4,6 +4,12 @@ A comprehensive Ansible playbook for configuring and hardening VPS servers with 
 
 ## Features
 
+- System Updates and Maintenance
+  - Automated system updates
+  - Smart reboot handling
+  - Package cleanup
+  - OS-specific update mechanisms
+
 - User Management
   - Create secure user with SSH key authentication
   - Configurable sudo access (with or without password)
@@ -11,25 +17,30 @@ A comprehensive Ansible playbook for configuring and hardening VPS servers with 
 
 - SSH Hardening
   - Disable root login and password authentication
-  - Custom SSH port configuration
-  - Secure SFTP configuration
+  - Enforce key-based authentication
+  - Secure SSH configuration
+  - X11 forwarding disabled
+  - Maximum authentication attempts limited
 
 - Firewall Configuration
   - UFW (Debian) or firewalld (RedHat) setup
-  - Configurable allowed ports
-  - OS-specific configurations
+  - Protocol-specific port configuration
+  - Default deny policy
+  - Stateful packet filtering
 
 - Fail2ban Integration
   - Brute force protection
   - Custom ban times and retry limits
   - Advanced monitoring with geolocation
   - Log rotation and status tracking
+  - Real-time jail status monitoring
 
 ## Prerequisites
 
 - Ansible 2.9 or higher
 - SSH access to target server
 - Python 3.x on target server
+- SSH key pair for authentication
 
 ## Quick Start
 
@@ -43,19 +54,38 @@ A comprehensive Ansible playbook for configuring and hardening VPS servers with 
    ```ini
    # inventory.ini
    [vps]
-   your-server-ip ansible_user=your-user ansible_ssh_private_key_file=~/.ssh/your-key
+   your-server-ip
    ```
 
 3. Configure variables in `group_vars/vps.yml`:
-   - Adjust SSH port if needed
-   - Configure firewall ports
-   - Set fail2ban parameters
-   - Customize monitoring settings
+   ```yaml
+   # User settings
+   user_settings:
+     username: "your-username"
+     sudo_group: "wheel"  # or "sudo" for Debian
+     sudo_requires_password: true
+     ssh_public_key: "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}"
+
+   # Security settings
+   security_settings:
+     ssh:
+       port: 22
+       permit_root_login: "no"
+       password_authentication: "no"
+     firewall:
+       allowed_ports:
+         - { port: 22, proto: "tcp" }  # SSH
+         - { port: 80, proto: "tcp" }  # HTTP
+         - { port: 443, proto: "tcp" } # HTTPS
+   ```
 
 4. Run the playbook:
    ```bash
    # Full deployment
    ansible-playbook -i inventory.ini playbook.yml -K
+
+   # System updates only
+   ansible-playbook -i inventory.ini playbook.yml -K --tags update
 
    # Security-only tasks
    ansible-playbook -i inventory.ini playbook.yml -K --tags security
@@ -64,38 +94,68 @@ A comprehensive Ansible playbook for configuring and hardening VPS servers with 
    ansible-playbook -i inventory.ini playbook.yml -K --tags verify
    ```
 
-## Security Features
+## Role Structure
 
-- SSH key-based authentication
-- Fail2ban brute force protection
-- Firewall configuration
-- Regular security status monitoring
-- Automated log rotation
-- Geolocation tracking of attacks
+The playbook is organized into specialized roles:
 
-## Monitoring
+- `update`: System updates and maintenance
+- `common`: Essential packages and configurations
+- `user`: User management and SSH key setup
+- `security`: SSH hardening and security configurations
+- `firewall`: Firewall setup and port management
+- `fail2ban`: Intrusion prevention and monitoring
+
+## Monitoring Tools
 
 The playbook includes a comprehensive monitoring system:
 
-- Real-time fail2ban status tracking
-- Geolocation of banned IPs
-- Daily log rotation
-- Attack attempt summaries
+- Fail2ban Status Tool (`f2b`):
+  ```bash
+  # View current status
+  sudo f2b
 
-Access monitoring:
-```bash
-# Quick status
-sudo f2b
+  # Features:
+  - Real-time banned IP list
+  - Geolocation of attackers
+  - Jail status overview
+  - Recent attack attempts
+  ```
 
-# View logs
-cat /var/log/fail2ban-status.log
-```
+- Log Monitoring:
+  ```bash
+  # View fail2ban logs
+  sudo cat /var/log/fail2ban.log
+
+  # View monitoring status
+  sudo cat /var/log/fail2ban-status.log
+  ```
+
+## Security Features
+
+- System hardening:
+  - Regular system updates
+  - Package cleanup
+  - Secure default configurations
+
+- Access control:
+  - SSH key-based authentication only
+  - Sudo access control
+  - Firewall port restrictions
+  - Fail2ban protection
+
+- Monitoring and logging:
+  - Automated log rotation
+  - Attack monitoring
+  - Geolocation tracking
+  - Status reporting
 
 ## OS Compatibility
 
+Tested and supported operating systems:
 - RedHat/CentOS/Fedora
 - Debian/Ubuntu
-- Automated OS-specific configurations
+
+The playbook automatically detects and applies OS-specific configurations.
 
 ## Contributing
 
@@ -111,8 +171,9 @@ MIT License - feel free to use and modify as needed.
 
 ## Security Notes
 
-- Default configuration requires sudo password
-- SSH password authentication is disabled by default
-- Regular monitoring is recommended
-- Keep system and packages updated
-- Review logs periodically
+- Keep your SSH private key secure
+- Regularly update system packages
+- Monitor logs for suspicious activity
+- Review fail2ban reports regularly
+- Maintain secure firewall rules
+- Consider enabling additional security features based on your needs
