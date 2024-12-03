@@ -5,43 +5,104 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}=== Fail2ban Status Overview ===${NC}\n"
+# Function to format timestamp
+format_timestamp() {
+    date "+%Y-%m-%d %H:%M:%S"
+}
+
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Function to get system stats
+get_system_stats() {
+    echo -e "${CYAN}=== System Statistics ===${NC}"
+    echo -e "Timestamp: $(format_timestamp)"
+    echo -e "Load Average: $(uptime | awk -F'load average:' '{print $2}')"
+    echo -e "Memory Usage: $(free -h | awk '/^Mem:/ {print $3 "/" $2}')"
+    echo -e "Disk Usage: $(df -h / | awk 'NR==2 {print $5 " used"}')\n"
+}
+
+# Function to get detailed IP info
+get_ip_info() {
+    local ip="$1"
+    local info=""
+    
+    if command_exists whois; then
+        local asn
+        asn=$(whois "$ip" 2>/dev/null | grep -i "origin" | head -n1 | awk '{print $2}')
+        [ -n "$asn" ] && info="$info ASN: $asn"
+    fi
+    
+    if command_exists geoiplookup; then
+        local geo
+        geo=$(geoiplookup "$ip" 2>/dev/null | head -n 1 | cut -d ':' -f 2-)
+        [ -n "$geo" ] && info="$info Location: $geo"
+    fi
+    
+    echo "$info"
+}
+
+echo -e "${BLUE}=== Fail2ban Status Overview ===${NC}"
+echo -e "Report generated at: $(format_timestamp)\n"
+
+# Get system stats
+get_system_stats
+
+# Get fail2ban version and status
+f2b_version=$(fail2ban-client version | head -n1)
+echo -e "${CYAN}Fail2ban Version: ${NC}$f2b_version"
 
 # Get all jails
-JAILS=$(fail2ban-client status | grep "Jail list:" | sed "s/^[^:]*:[ \t]*//g" | sed "s/,//g")
+jails=$(fail2ban-client status | grep "Jail list:" | sed "s/^[^:]*:[ \t]*//g" | sed "s/,//g")
+total_jails=$(echo "$jails" | wc -w)
+total_banned=0
 
-# Print overall status
-echo -e "${YELLOW}Active Jails:${NC}"
-for JAIL in $JAILS
+echo -e "\n${YELLOW}Active Jails ($total_jails):${NC}"
+for jail in $jails
 do
-    BANNED_COUNT=$(fail2ban-client status "$JAIL" | grep "Currently banned:" | grep -o "[0-9]*")
-    TOTAL_BANNED=$(fail2ban-client status "$JAIL" | grep "Total banned:" | grep -o "[0-9]*")
-    FAILED_COUNT=$(fail2ban-client status "$JAIL" | grep "Currently failed:" | grep -o "[0-9]*")
+    # Get jail status with single fail2ban-client call to improve performance
+    jail_status=$(fail2ban-client status "$jail")
     
-    echo -e "\n${GREEN}[$JAIL]${NC}"
-    echo -e "Currently banned IPs: ${RED}$BANNED_COUNT${NC}"
-    echo -e "Total banned IPs: ${RED}$TOTAL_BANNED${NC}"
-    echo -e "Current failed attempts: ${YELLOW}$FAILED_COUNT${NC}"
+    banned_count=$(echo "$jail_status" | grep "Currently banned:" | grep -o "[0-9]*")
+    total_banned=$((total_banned + banned_count))
+    total_banned_all=$(echo "$jail_status" | grep "Total banned:" | grep -o "[0-9]*")
+    failed_count=$(echo "$jail_status" | grep "Currently failed:" | grep -o "[0-9]*")
+    find_time=$(echo "$jail_status" | grep "findtime:" | grep -o "[0-9]*")
+    max_retry=$(echo "$jail_status" | grep "maxretry:" | grep -o "[0-9]*")
     
-    # Get banned IP list
-    BANNED_IPS=$(fail2ban-client status "$JAIL" | grep "Banned IP list:" | sed "s/^[^:]*:[ \t]*//g")
-    if [ ! -z "$BANNED_IPS" ]; then
+    echo -e "\n${GREEN}[$jail]${NC}"
+    echo -e "Currently banned IPs: ${RED}$banned_count${NC}"
+    echo -e "Total banned IPs: ${RED}$total_banned_all${NC}"
+    echo -e "Current failed attempts: ${YELLOW}$failed_count${NC}"
+    echo -e "Find Time: ${CYAN}${find_time}s${NC}"
+    echo -e "Max Retry: ${CYAN}$max_retry${NC}"
+    
+    # Get banned IP list with enhanced info
+    banned_ips=$(echo "$jail_status" | grep "Banned IP list:" | sed "s/^[^:]*:[ \t]*//g")
+    if [ -n "$banned_ips" ]; then
         echo -e "\nBanned IPs:"
-        for IP in $BANNED_IPS
+        for ip in $banned_ips
         do
-            # Try to get geolocation info
-            if command -v geoiplookup >/dev/null 2>&1; then
-                GEO=$(geoiplookup "$IP" 2>/dev/null | head -n 1 | cut -d ':' -f 2-)
-                echo -e "${RED}$IP${NC} - $GEO"
-            else
-                echo -e "${RED}$IP${NC}"
-            fi
+            ip_info=$(get_ip_info "$ip")
+            echo -e "${RED}$ip${NC} - $ip_info"
         done
     fi
 done
 
-# Show recent failed attempts
-echo -e "\n${YELLOW}Recent Failed Attempts:${NC}"
-journalctl -u fail2ban -n 10 --no-pager | grep "Ban" | tail -n 5 
+# Summary section
+echo -e "\n${CYAN}=== Summary ===${NC}"
+echo -e "Total Active Jails: $total_jails"
+echo -e "Total Currently Banned IPs: ${RED}$total_banned${NC}"
+
+# Show recent actions (both bans and unbans)
+echo -e "\n${YELLOW}Recent Actions:${NC}"
+journalctl -u fail2ban -n 15 --no-pager | grep -E "Ban|Unban" | tail -n 10
+
+# Check fail2ban service status
+echo -e "\n${CYAN}Service Status:${NC}"
+systemctl status fail2ban --no-pager | grep "Active:"

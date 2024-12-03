@@ -12,6 +12,16 @@
   become: true
   tags: ['monitoring']
   block:
+    - name: Install additional monitoring dependencies
+      package:
+        name:
+          - whois
+          - geoip
+          - geoip
+          - logrotate
+          - sysstat
+        state: present
+
     - name: Copy fail2ban monitoring script
       copy:
         src: fail2ban-status.sh
@@ -35,12 +45,21 @@
         owner: root
         group: root
 
-    - name: Set up monitoring cron job
+    - name: Set up monitoring cron jobs
       cron:
-        name: "Check fail2ban status"
-        job: "/usr/bin/f2b > {{ security_settings.fail2ban.log_path }}"
-        minute: "*/5"  # Run every 5 minutes
+        name: "{{ item.name }}"
+        job: "{{ item.job }}"
+        minute: "{{ item.minute }}"
+        hour: "{{ item.hour | default('*') }}"
         user: root
+      loop:
+        - name: "Check fail2ban status (frequent)"
+          job: "/usr/bin/f2b > {{ security_settings.fail2ban.log_path }}"
+          minute: "*/5"
+        - name: "Generate daily fail2ban report"
+          job: "/usr/bin/f2b > {{ security_settings.fail2ban.log_path }}.daily.$(date +\\%Y\\%m\\%d)"
+          minute: "0"
+          hour: "0"
 
     - name: Set up log rotation
       copy:
@@ -52,6 +71,16 @@
           {{ security_settings.fail2ban.log_path }} {
             daily
             rotate 7
+            compress
+            delaycompress
+            missingok
+            notifempty
+            create 0644 root root
+          }
+          
+          {{ security_settings.fail2ban.log_path }}.daily.* {
+            weekly
+            rotate 52
             compress
             delaycompress
             missingok
